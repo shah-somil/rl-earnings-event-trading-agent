@@ -1,0 +1,195 @@
+# Earnings Event Trading Agent (EETA) - Configuration
+# configs/default.yaml
+
+# =============================================================================
+# PROJECT SETTINGS
+# =============================================================================
+project:
+  name: "EETA"
+  version: "2.0.0"
+  description: "Multi-Agent RL for Earnings-Based Trading"
+
+# =============================================================================
+# DATA SETTINGS
+# =============================================================================
+data:
+  # Date range for historical data
+  start_date: "2019-01-01"
+  end_date: "2024-12-01"
+  
+  # Target tickers (S&P 500 subset for training)
+  ticker_universe: "sp500"
+  max_tickers: 500
+  
+  # Feature settings
+  # state_dim: 36
+  state_dim: 43  # Updated to reflect new state dimension
+  lookback_quarters: 12
+  
+  # Cache settings
+  cache_dir: "data/cache"
+  use_cache: true
+
+# =============================================================================
+# DQN CONFIGURATION
+# =============================================================================
+dqn:
+  # Network architecture
+  # state_dim: 36
+  state_dim: 43  # Updated to reflect new state dimension
+  action_dim: 5
+  hidden_dims: [128, 64]
+  dropout: 0.2
+  
+  # Learning parameters
+  learning_rate: 0.01
+  gamma: 0.99  # Discount factor
+  tau: 0.005   # Soft update parameter
+  
+  # Exploration (epsilon-greedy)
+  epsilon_start: 1.0
+  epsilon_end: 0.05
+  epsilon_decay: 0.995
+  
+  # Experience replay
+  batch_size: 32
+  replay_buffer_size: 10000
+  min_replay_size: 1000
+  
+  # Target network
+  target_update_freq: 100
+
+# =============================================================================
+# THOMPSON SAMPLING CONFIGURATION
+# =============================================================================
+thompson:
+  # Position size buckets
+  num_buckets: 5
+  size_buckets: [0.005, 0.01, 0.02, 0.03, 0.05]  # 0.5% to 5%
+  
+  # Beta distribution priors
+  prior_alpha: 1.0
+  prior_beta: 1.0
+  
+  # Contextual adjustment
+  confidence_weight: 2.0
+  volatility_penalty: 1.5
+
+# =============================================================================
+# TRAINING CONFIGURATION
+# =============================================================================
+training:
+  # Episode settings
+  total_episodes: 100
+  episodes_per_fold: 500
+  max_steps_per_episode: 50
+  
+  # Evaluation
+  eval_frequency: 25
+  checkpoint_frequency: 10
+  
+  # Curriculum learning
+  curriculum:
+    enabled: true
+    easy_episodes: 30
+    medium_episodes: 40
+    hard_episodes: 30
+    easy_tickers: ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "TSLA", "JPM", "JNJ", "V"]
+    
+  # Walk-forward validation
+  walk_forward:
+    min_train_years: 3
+    test_years: 1
+    n_folds: 3
+
+# =============================================================================
+# RISK CONTROLS
+# =============================================================================
+risk:
+  # Position limits
+  max_position_size: 0.05       # 5% max per trade
+  min_position_size: 0.005      # 0.5% min per trade
+  
+  # Loss limits
+  daily_loss_limit: 0.03        # 3% daily loss limit
+  max_drawdown: 0.10            # 10% max drawdown
+  
+  # Correlation limits
+  max_correlated_positions: 3
+  
+  # Circuit breakers
+  consecutive_loss_limit: 5     # Halt after 5 consecutive losses
+  
+# =============================================================================
+# REWARD ENGINEERING
+# =============================================================================
+# reward:
+#   # Base reward scaling
+#   pnl_scale: 10.0
+  
+#   # Risk aversion (losses hurt more)
+#   risk_aversion: 1.5
+  
+#   # Bonuses/Penalties
+#   sizing_reward_weight: 0.1
+#   correct_skip_bonus: 0.2
+#   missed_opportunity_penalty: 0.05
+
+reward:
+  # Base reward scaling - INCREASED to make trading more attractive
+  pnl_scale: 40.0          # Was 10.0
+  
+  # Risk aversion (losses hurt more)
+  risk_aversion: 1.2       # Was 1.5 - reduced so losses don't scare agent as much
+  
+  # Bonuses/Penalties - REBALANCED
+  sizing_reward_weight: 0.1
+  correct_skip_bonus: 0.02     # Was 0.2 - MUCH lower
+  missed_opportunity_penalty: 0.1  # Was 0.05 - removed, let dynamic calc handle it
+
+# =============================================================================
+# AGENT COST CONFIGURATION
+# =============================================================================
+agent_costs:
+  historical: 0.1    # Low cost (local computation)
+  sentiment: 0.5     # Medium cost (API calls)
+  market: 0.2        # Low cost (single API call)
+  
+  # Skip thresholds
+  skip_sentiment_confidence: 0.85
+  skip_options_volatility: 0.15
+
+# =============================================================================
+# API CONFIGURATION
+# =============================================================================
+api:
+  finnhub:
+    rate_limit: 60  # requests per minute
+    timeout: 10     # seconds
+  yfinance:
+    rate_limit: 2000  # requests per hour
+    timeout: 30       # seconds
+
+# =============================================================================
+# LOGGING & MONITORING
+# =============================================================================
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "experiments/logs/training.log"
+
+# =============================================================================
+# VISUALIZATION
+# =============================================================================
+visualization:
+  # Dashboard settings
+  dashboard_panels: 9
+  figure_size: [15, 12]
+  dpi: 150
+  
+  # Colors
+  colors:
+    long: "#2ecc71"
+    short: "#e74c3c"
+    neutral: "#95a5a6"
+    volatility: "#3498db"
