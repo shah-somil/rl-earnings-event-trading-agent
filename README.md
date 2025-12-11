@@ -30,49 +30,54 @@ EETA is a sophisticated multi-agent reinforcement learning system that learns op
 
 ## 🏗️ Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    COST-AWARE ORCHESTRATOR                          │
-│  Conditionally runs agents based on confidence levels               │
-└────────────────────────────┬────────────────────────────────────────┘
-                             │
-        ┌────────────────────┼────────────────────┐
-        ▼                    ▼                    ▼
-┌───────────────┐   ┌───────────────┐   ┌───────────────┐
-│  HISTORICAL   │   │   SENTIMENT   │   │    MARKET     │
-│    AGENT      │   │    AGENT      │   │    AGENT      │
-│               │   │               │   │               │
-│ • Beat rate   │   │ • News tone   │   │ • VIX level   │
-│ • Avg move    │   │ • Attention   │   │ • SPY trend   │
-│ • Consistency │   │ • Revisions   │   │ • Regime      │
-└───────┬───────┘   └───────┬───────┘   └───────┬───────┘
-        │                   │                   │
-        └───────────────────┼───────────────────┘
-                            ▼
-                ┌───────────────────────┐
-                │    36-DIM STATE       │
-                │    VECTOR             │
-                └───────────┬───────────┘
-                            │
-        ┌───────────────────┼───────────────────┐
-        ▼                                       ▼
-┌───────────────────┐               ┌───────────────────┐
-│  POSITION SELECTOR│               │   SIZE OPTIMIZER  │
-│      (DQN)        │               │ (Thompson Sampling)│
-│                   │               │                   │
-│  36 → 128 → 64 → 5│               │  Beta distributions│
-└─────────┬─────────┘               └─────────┬─────────┘
-          │                                   │
-          └───────────────┬───────────────────┘
-                          ▼
-                ┌───────────────────────┐
-                │   RISK CONTROLLER     │
-                │   (Hard Limits)       │
-                │                       │
-                │  • Max 5% per trade   │
-                │  • Daily loss 3%      │
-                │  • Drawdown 10%       │
-                └───────────────────────┘
+```mermaid
+flowchart TB
+    subgraph INPUT["📅 INPUT"]
+        EC[("Earnings Calendar<br/>Event Queue")]
+    end
+
+    subgraph ORCHESTRATOR["🎯 COST-AWARE ORCHESTRATOR"]
+        direction TB
+        OL["Decision Logic:<br/>1. Always run Historical first<br/>2. Skip Sentiment if confidence > 0.85<br/>3. Skip Market if volatility < 0.15<br/>4. Aggregate → Position Selector"]
+    end
+
+    subgraph AGENTS["🤖 SPECIALIZED AGENTS"]
+        direction LR
+        HA["📊 Historical<br/>Pattern Agent<br/>─────────<br/>• Beat rate<br/>• Avg move<br/>• Consistency<br/>• Guidance hist"]
+        SA["📰 Sentiment<br/>Analysis Agent<br/>─────────<br/>• News tone<br/>• Social buzz<br/>• Analyst revs<br/>• Attention"]
+        MA["📈 Market<br/>Context Agent<br/>─────────<br/>• VIX level<br/>• SPY trend<br/>• Sector perf<br/>• Market regime"]
+    end
+
+    subgraph MEMORY["💾 SHARED MEMORY"]
+        SM[("36-Dimensional<br/>State Vector")]
+    end
+
+    subgraph RL["🧠 REINFORCEMENT LEARNING"]
+        direction LR
+        DQN["🎮 DQN<br/>Position Selector<br/>─────────<br/>5 Actions:<br/>NO_TRADE<br/>LONG / SHORT<br/>LONG_VOL<br/>SHORT_VOL"]
+        TS["🎲 Thompson<br/>Sampling<br/>─────────<br/>Position Sizing:<br/>0.5% / 1%<br/>2% / 3% / 5%"]
+    end
+
+    subgraph RISK["🛡️ RISK CONTROLS"]
+        RC["• Max 5% position<br/>• 15% drawdown limit<br/>• Correlation limits"]
+    end
+
+    subgraph OUTPUT["💰 OUTPUT"]
+        TD[("Trading<br/>Decision")]
+    end
+
+    EC --> ORCHESTRATOR
+    ORCHESTRATOR --> HA
+    ORCHESTRATOR --> SA
+    ORCHESTRATOR --> MA
+    HA --> SM
+    SA --> SM
+    MA --> SM
+    SM --> DQN
+    SM --> TS
+    DQN --> RC
+    TS --> RC
+    RC --> TD
 ```
 
 ---
